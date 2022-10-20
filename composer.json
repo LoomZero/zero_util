@@ -1,0 +1,16 @@
+{
+  "name": "loomzero/zero_util",
+  "type": "drupal-module",
+  "description": "Provides Logger",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/zero_util",
+  "minimum-stability": "dev",
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/zero_util",
+    "source": "http://cgit.drupalcode.org/zero_util"
+  },
+  "require": {
+    "composer/installers": "~1.0"
+  }
+}

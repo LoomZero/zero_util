@@ -1,0 +1,4 @@
+services:
+
+  zero_util:
+    class: Drupal\zero_util\Service\ZeroUtil
