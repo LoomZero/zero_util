@@ -8,9 +8,9 @@ class DataArray {
     if ($value instanceof DataArray) return $value->has($key);
 
     foreach (explode('.', $key) as $part) {
-      if (is_array($value)) {
+      if (is_array($value) && array_key_exists($part, $value)) {
         $value = $value[$part];
-      } else if (is_object($value)) {
+      } else if (is_object($value) && property_exists($value, $part)) {
         $value = $value->$part;
       } else {
         return FALSE;
@@ -23,9 +23,9 @@ class DataArray {
     if ($value instanceof DataArray) return $value->get($key, $fallback);
 
     foreach (explode('.', $key) as $part) {
-      if (is_array($value)) {
+      if (is_array($value) && array_key_exists($part, $value)) {
         $value = $value[$part];
-      } else if (is_object($value)) {
+      } else if (is_object($value) && property_exists($value, $part)) {
         $value = $value->$part;
       } else {
         return $fallback;
