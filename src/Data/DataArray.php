@@ -4,31 +4,59 @@ namespace Drupal\zero_util\Data;
 
 class DataArray {
 
-  public static function hasNested($value, string $key): bool {
+  /**
+   * @param string $value
+   * @param callable $replacer(string $value, string $match, string $root): string
+   *
+   * @return string
+   */
+  public static function replace(string $value, callable $replacer): string {
+    $matches = [];
+    preg_match_all('#{{\s*([\w.|/-]+)\s*}}#', $value, $matches);
+    foreach ($matches[1] as $index => $match) {
+      $keys = explode('|', $match);
+      $replacement = NULL;
+      foreach ($keys as $key) {
+        $replacement = $replacer($value, $key, $matches[0][$index]);
+        if (is_string($replacement) || is_numeric($replacement) || is_object($replacement) && !is_array($replacement)) {
+          $value = str_replace($matches[0][$index], (string)$replacement, $value);
+          break;
+        }
+      }
+      if (!is_string($replacement) && !is_numeric($replacement) && !is_object($replacement) || is_array($replacement)) $value = str_replace($matches[0][$index], '', $value);
+    }
+    return $value;
+  }
+
+  public static function hasNested($value, string $key, bool $allowNULL = FALSE): bool {
     if ($value instanceof DataArray) return $value->has($key);
 
-    foreach (explode('.', $key) as $part) {
-      if (is_array($value) && array_key_exists($part, $value)) {
-        $value = $value[$part];
-      } else if (is_object($value) && property_exists($value, $part)) {
-        $value = $value->$part;
-      } else {
-        return FALSE;
+    if (strlen($key)) {
+      foreach (explode('.', $key) as $part) {
+        if (is_array($value) && array_key_exists($part, $value)) {
+          $value = $value[$part];
+        } else if (is_object($value) && property_exists($value, $part)) {
+          $value = $value->$part;
+        } else {
+          return FALSE;
+        }
       }
     }
-    return TRUE;
+    return $value !== NULL || $allowNULL;
   }
 
   public static function getNested($value, string $key, $fallback = NULL) {
     if ($value instanceof DataArray) return $value->get($key, $fallback);
 
-    foreach (explode('.', $key) as $part) {
-      if (is_array($value) && array_key_exists($part, $value)) {
-        $value = $value[$part];
-      } else if (is_object($value) && property_exists($value, $part)) {
-        $value = $value->$part;
-      } else {
-        return $fallback;
+    if (strlen($key)) {
+      foreach (explode('.', $key) as $part) {
+        if (is_array($value) && array_key_exists($part, $value)) {
+          $value = $value[$part];
+        } else if (is_object($value) && property_exists($value, $part)) {
+          $value = $value->$part;
+        } else {
+          return $fallback;
+        }
       }
     }
     return $value;
@@ -40,12 +68,45 @@ class DataArray {
     $this->value = $value;
   }
 
-  public function has(string $key): bool {
-    return self::hasNested($this->value, $key);
+  public function has(string $key, bool $allowNULL = FALSE): bool {
+    return self::hasNested($this->value, $key, $allowNULL);
+  }
+
+  /**
+   * @param string[] $keys
+   * @param $fallback
+   * @param array $empty
+   *
+   * @return bool
+   */
+  public function hasAll(array $keys, $fallback = NULL, array $empty = [NULL]): bool {
+    foreach ($keys as $key) {
+      $value = $this->get($key, $fallback);
+      if (in_array($value, $empty)) return FALSE;
+    }
+    return TRUE;
   }
 
   public function get(string $key, $fallback = NULL) {
     return self::getNested($this->value, $key, $fallback);
+  }
+
+  public function getData(string $key, $fallback = NULL): DataArray {
+    return new DataArray($this->get($key, $fallback));
+  }
+
+  public function map(string $key, callable $callback): array {
+    $value = $this->get($key);
+    if (!is_array($value)) $value = [$value];
+    return array_map(function($value) use ($callback) {
+      if (!$value instanceof DataArray) $value = new DataArray($value);
+      $return = $callback($value);
+      if ($return instanceof DataArray) {
+        return $return->get('');
+      } else {
+        return $return;
+      }
+    }, $value);
   }
 
   public function set(string $key, $value): self {
