@@ -4,13 +4,18 @@ namespace Drupal\zero_util\Data;
 
 class DataArray {
 
+  public static function arrayEqual(array $one, array $two): bool {
+    return serialize($one) === serialize($two);
+  }
+
   /**
    * @param string $value
    * @param callable $replacer(string $value, string $match, string $root): string
+   * @param bool $replaceUnknown
    *
    * @return string
    */
-  public static function replace(string $value, callable $replacer): string {
+  public static function replace(string $value, callable $replacer, bool $replaceUnknown = TRUE): string {
     $matches = [];
     preg_match_all('#{{\s*([\w.|/-]+)\s*}}#', $value, $matches);
     foreach ($matches[1] as $index => $match) {
@@ -23,7 +28,9 @@ class DataArray {
           break;
         }
       }
-      if (!is_string($replacement) && !is_numeric($replacement) && !is_object($replacement) || is_array($replacement)) $value = str_replace($matches[0][$index], '', $value);
+      if ($replaceUnknown) {
+        if (!is_string($replacement) && !is_numeric($replacement) && !is_object($replacement) || is_array($replacement)) $value = str_replace($matches[0][$index], '', $value);
+      }
     }
     return $value;
   }
