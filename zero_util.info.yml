@@ -1,6 +1,6 @@
 name: ZERO Util
 type: module
 description: "ZERO Util"
-core_version_requirement: 9.*
+core_version_requirement: ">=8"
 package: zero
-version: 0.1.0
+version: 1.0.0

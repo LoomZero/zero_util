@@ -11,6 +11,6 @@
     "source": "http://cgit.drupalcode.org/zero_util"
   },
   "require": {
-    "composer/installers": "~1.0"
+    "composer/installers": ">=1.0"
   }
 }
