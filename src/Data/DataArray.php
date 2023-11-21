@@ -4,18 +4,26 @@ namespace Drupal\zero_util\Data;
 
 class DataArray {
 
+  public static function replaceFrom(array|DataArray $data): callable {
+    if (is_array($data)) $data = new DataArray($data);
+    return function(string $value, string $match, string $root) use ($data) : string {
+      return $data->get($match);
+    };
+  }
+
   public static function arrayEqual(array $one, array $two): bool {
     return serialize($one) === serialize($two);
   }
 
   /**
    * @param string $value
-   * @param callable $replacer(string $value, string $match, string $root): string
+   * @param callable|array|DataArray $replacer(string $value, string $match, string $root): string
    * @param bool $replaceUnknown
    *
    * @return string
    */
-  public static function replace(string $value, callable $replacer, bool $replaceUnknown = TRUE): string {
+  public static function replace(string $value, callable|array|DataArray $replacer, bool $replaceUnknown = TRUE): string {
+    if (!is_callable($replacer)) $replacer = DataArray::replaceFrom($replacer);
     $matches = [];
     preg_match_all('#{{\s*([\w.|/-]+)\s*}}#', $value, $matches);
     foreach ($matches[1] as $index => $match) {
