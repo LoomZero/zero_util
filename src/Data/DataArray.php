@@ -2,6 +2,9 @@
 
 namespace Drupal\zero_util\Data;
 
+use Drupal\zero_util\Exception\DataException;
+use stdClass;
+
 class DataArray {
 
   public static function replaceFrom(array|DataArray $data): callable {
@@ -43,6 +46,32 @@ class DataArray {
     return $value;
   }
 
+  public static function replaceAll(string|array $value, callable|array|DataArray $replacer, bool $replaceUnknown = TRUE) {
+    if (is_string($value)) {
+      return self::replace($value, $replacer, $replaceUnknown);
+    } else if (is_array($value)) {
+      $newArray = [];
+      foreach ($value as $key => $item) {
+        if (is_string($key)) {
+          $key = self::replace($key, $replacer, $replaceUnknown);
+        }
+        $newArray[$key] = self::replaceAll($item, $replacer, $replaceUnknown);
+      }
+      return $newArray;
+    } else if (is_object($value)) {
+      $newObject = new stdClass();
+      foreach (get_object_vars($value) as $key => $item) {
+        if (is_string($key)) {
+          $key = self::replace($key, $replacer, $replaceUnknown);
+        }
+        $newObject->{$key} = self::replaceAll($item, $replacer, $replaceUnknown);
+      }
+      return $newObject;
+    } else {
+      return $value;
+    }
+  }
+
   public static function hasNested($value, string $key, bool $allowNULL = FALSE): bool {
     if ($value instanceof DataArray) return $value->has($key);
 
@@ -74,6 +103,41 @@ class DataArray {
         }
       }
     }
+    return $value;
+  }
+
+  public static function setNested($value, string $key, $item) {
+    if (strlen($key) === 0) return $item;
+    $subject = &$value;
+    $parts = explode('.', $key);
+    $last = array_pop($parts);
+
+    // loop through value
+    foreach ($parts as $delta => $part) {
+      if (is_array($subject)) {
+        if (!isset($subject[$part])) {
+          $subject[$part] = [];
+        }
+        $subject = &$subject[$part];
+      } else if (is_object($subject)) {
+        if (!isset($subject->{$part})) {
+          $subject->{$part} = [];
+        }
+        $subject = &$subject->{$part};
+      } else {
+        throw new DataException('The subject "' . implode('.', array_slice($parts, 0, $delta + 1)) . '" is not an array or an object. It can not be nested with key "' . $part . '"');
+      }
+    }
+
+    // insert item
+    if (is_array($subject)) {
+      $subject[$last] = $item;
+    } else if (is_object($subject)) {
+      $subject->{$last} = $item;
+    } else {
+      throw new DataException('The subject "' . implode('.', $parts) . '" is not an array or an object. It can not be nested with key "' . $last . '"');
+    }
+
     return $value;
   }
 
@@ -125,7 +189,7 @@ class DataArray {
   }
 
   public function set(string $key, $value): self {
-    $this->value[$key] = $value;
+    $this->value = self::setNested($this->value, $key, $value);
     return $this;
   }
 
