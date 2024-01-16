@@ -28,7 +28,7 @@ class DataArray {
   public static function replace(string $value, callable|array|DataArray $replacer, bool $replaceUnknown = TRUE): string {
     if (!is_callable($replacer)) $replacer = DataArray::replaceFrom($replacer);
     $matches = [];
-    preg_match_all('#{{\s*([\w.|/-]+)\s*}}#', $value, $matches);
+    preg_match_all('#{{\s*([\w.|/-@]+)\s*}}#', $value, $matches);
     foreach ($matches[1] as $index => $match) {
       $keys = explode('|', $match);
       $replacement = NULL;
