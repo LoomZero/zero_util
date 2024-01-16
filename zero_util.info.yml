@@ -3,4 +3,4 @@ type: module
 description: "ZERO Util"
 core_version_requirement: ">=8"
 package: zero
-version: 1.0.0
+version: 1.0.1
